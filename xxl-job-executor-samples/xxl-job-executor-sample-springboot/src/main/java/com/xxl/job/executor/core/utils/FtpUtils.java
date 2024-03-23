@@ -55,7 +55,7 @@ public class FtpUtils {
                 localFiles = localFile.listFiles();
                 if (localFiles == null || localFiles.length == 0) {
                     XxlJobHelper.log("uploadPath is empty.");
-                    return false; 
+                    return false;
                 }
                 // 上传文件
                 Arrays.stream(localFiles).filter(File::isFile).forEach(item -> this.uploadFile(client, item));
@@ -101,7 +101,7 @@ public class FtpUtils {
                     .filter(FTPFile::isFile)
                     .map(FTPFile::getName)
                     .collect(Collectors.toList());
-            
+
             if (remoteFileNames.isEmpty()) {
                 XxlJobHelper.log("no files found on the FTP server, remotePath: " + params.getRemotePath());
                 return false;
@@ -111,7 +111,7 @@ public class FtpUtils {
                 XxlJobHelper.log("no files needs to download");
                 return false;
             }
-            fileNames.forEach(fileName -> this.downloadFile(client, params.getLocalPath(), fileName));
+            fileNames.forEach(fileName -> this.downloadFile(client, params.getLocalPath(), fileName, true));
         } catch (Exception e) {
             XxlJobHelper.log("download file failed, message " + e.getMessage());
             return false;
@@ -148,14 +148,22 @@ public class FtpUtils {
      * @param filePath filePath
      * @param fileName fileName
      */
-    private void downloadFile(FTPClient client, String filePath, String fileName) {
+    private void downloadFile(FTPClient client, String filePath, String fileName, boolean deleteFile) {
         File downloadedFile = new File(filePath + fileName);
         try (FileOutputStream fos = new FileOutputStream(downloadedFile)) {
             if (client != null){
                 // 下载文件
-                client.retrieveFile(fileName, fos);
+                boolean success = client.retrieveFile(fileName, fos);
+                if (success){
+                    XxlJobHelper.log("download file success, fileName: " + fileName);
+                    if (deleteFile){
+                        boolean deleted = client.deleteFile(fileName);
+                        if (deleted){
+                            XxlJobHelper.log("delete file success, fileName: " + fileName);
+                        }
+                    }
+                }
             }
-            XxlJobHelper.log("download file success, fileName: " + fileName);
         } catch (Exception e) {
             XxlJobHelper.log("download file failed" + e.getMessage());
             throw new RuntimeException(e.getMessage());
@@ -188,7 +196,7 @@ public class FtpUtils {
      * 备份文件
      * @param sourceDirPath sourceDirPath
      * @param destDirPath destDirPath
-     * @throws IOException
+     * @throws IOException IOException
      */
     public static void copyFilesFromDirToDir(String sourceDirPath, String destDirPath) throws IOException {
         // 创建目标目录如果不存在
@@ -227,7 +235,7 @@ public class FtpUtils {
         LocalDate oneMonthAgo = LocalDate.now().minusMonths(1);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String hisDate = formatter.format(oneMonthAgo);
-        
+
         File destDir = new File(backupPath);
         File[] destDirPathDir = destDir.listFiles();
         if (destDirPathDir == null){
@@ -254,5 +262,5 @@ public class FtpUtils {
             }
         }
     }
-    
+
 }
