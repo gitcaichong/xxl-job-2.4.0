@@ -75,10 +75,10 @@ public class CchsJob {
             XxlJobHelper.log("CchsJob uploadFile params: " + params);
             client = ftpUtils.loginFtp(params.getFtpParam());
             if (ftpUtils.uploadFiles(client, params)){
-                // 备份文件
-                FtpUtils.copyFilesFromDirToDir(params.getLocalPath(), params.getBackupPath());
-                // 删除一个月前的数据
-                FtpUtils.deleteFileMonthAgo(params.getBackupPath());
+//                // 备份文件
+//                FtpUtils.copyFilesFromDirToDir(params.getLocalPath(), params.getBackupPath());
+//                // 删除一个月前的数据
+//                FtpUtils.deleteFileMonthAgo(params.getBackupPath());
                 XxlJobHelper.log("CchsJob uploadFile succeed.");
             } else {
                 XxlJobHelper.log("CchsJob uploadFile failed.");

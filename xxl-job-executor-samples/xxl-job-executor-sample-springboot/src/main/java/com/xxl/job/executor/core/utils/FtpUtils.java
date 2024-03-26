@@ -72,6 +72,8 @@ public class FtpUtils {
             // 上传文件到FTP服务器
             String fileName = localFile.getName();
             client.storeFile(fileName, fis);
+            // 删除文件
+            localFile.delete();
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
         }
