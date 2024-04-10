@@ -37,34 +37,44 @@ public class FtpUtils {
             XxlJobHelper.log("FTPClient is null.");
             return false;
         }
-        try {
-            String remotePath = params.getRemotePath();
-            if (remotePath != null && !remotePath.isEmpty()) {
-                if (!client.changeWorkingDirectory(remotePath)){
-                    XxlJobHelper.log("change remote directory failed, remotePath: " +remotePath);
-                    return false;
+        int retries = 2; // 设置最大重试次数
+        Exception lastException = null;
+        for (int i = 0; i <= retries; i++) {
+            try {
+                String remotePath = params.getRemotePath();
+                if (remotePath != null && !remotePath.isEmpty()) {
+                    if (!client.changeWorkingDirectory(remotePath)){
+                        XxlJobHelper.log("change remote directory failed, remotePath: " +remotePath);
+                        return false;
+                    }
+                }
+                // 查看上传文件夹是否有文件
+                File localFile = new File(params.getLocalPath());
+                if (!localFile.exists()) {
+                    localFile.mkdirs();
+                }
+                File[] localFiles;
+                if (localFile.isDirectory()) {
+                    localFiles = localFile.listFiles();
+                    if (localFiles == null || localFiles.length == 0) {
+                        XxlJobHelper.log("uploadPath is empty.");
+                        return false;
+                    }
+                    // 上传文件
+                    Arrays.stream(localFiles).filter(File::isFile).forEach(item -> this.uploadFile(client, item));
+                }
+                return true;
+            } catch (Exception e) {
+                lastException = e; // 记录最后一次异常
+                XxlJobHelper.log("Upload attempt " + (i + 1) + " failed, message: " + e.getMessage());
+                if (i < retries) {
+                    XxlJobHelper.log("Retrying upload (" + (retries - i) + " attempts remaining)...");
                 }
             }
-            // 查看上传文件夹是否有文件
-            File localFile = new File(params.getLocalPath());
-            if (!localFile.exists()) {
-                localFile.mkdirs();
-            }
-            File[] localFiles;
-            if (localFile.isDirectory()) {
-                localFiles = localFile.listFiles();
-                if (localFiles == null || localFiles.length == 0) {
-                    XxlJobHelper.log("uploadPath is empty.");
-                    return false;
-                }
-                // 上传文件
-                Arrays.stream(localFiles).filter(File::isFile).forEach(item -> this.uploadFile(client, item));
-            }
-        } catch (Exception e) {
-            XxlJobHelper.log("download file failed, message " + e.getMessage());
-            return false;
         }
-        return true;
+        XxlJobHelper.log("All " + retries + " upload attempts failed.");
+        XxlJobHelper.log("Final exception: ", lastException);
+        return false;
     }
 
     private void uploadFile(FTPClient client, File localFile) {
@@ -129,12 +139,12 @@ public class FtpUtils {
 
         if (params.getPrefixNames() != null && !params.getPrefixNames().isEmpty()) {
             params.getPrefixNames().stream().filter(prefixName -> prefixName != null && !prefixName.isEmpty())
-                .forEach(prefixName -> {
-                    Optional<String> latestFileName = remoteFileNames.stream()
-                        .filter(remoteName -> remoteName.startsWith(prefixName))
-                        .max(Comparator.comparing(FtpUtils::extractTimestamp));
-                    latestFileName.ifPresent(names::add);
-                });
+                .forEach(prefixName -> remoteFileNames.forEach(remoteName ->
+                    {
+                        if (remoteName.startsWith(prefixName)){
+                        names.add(remoteName);
+                    }
+                }));
         }
         return names;
     }

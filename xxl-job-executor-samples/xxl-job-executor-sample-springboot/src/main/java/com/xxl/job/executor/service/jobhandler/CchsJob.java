@@ -10,7 +10,6 @@ import com.xxl.job.executor.core.model.CchsParam;
 import com.xxl.job.executor.core.utils.FtpUtils;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import org.apache.commons.net.ftp.FTPClient;
 
 @Component
@@ -39,12 +38,6 @@ public class CchsJob {
             File file = new File(params.getLocalPath());
             if (!file.exists()) {
                 file.mkdirs();
-            }
-            if (file.isDirectory()) {
-                File[] files = file.listFiles();
-                if (files != null && files.length > 0) {
-                    Arrays.stream(files).forEach(File::delete);
-                }
             }
             if (ftpUtils.downLoadFiles(client, params)){
                 XxlJobHelper.log("CchsJob downloadFile succeed.");
